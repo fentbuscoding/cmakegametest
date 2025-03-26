@@ -152,14 +152,48 @@ void drawAmmo() {
     drawText(ammoText, 10, 70);
 }
 
-void renderUI() {
+// New function to draw FPS counter
+void drawFPS(int fps) {
+    char fpsText[32];
+    snprintf(fpsText, sizeof(fpsText), "FPS: %d", fps);
+    drawText(fpsText, 10, 100);
+}
+
+void renderUI(int fps) {
     SDL_SetRenderDrawBlendMode(sdlRenderer, SDL_BLENDMODE_BLEND);
     drawHotbar();
     drawCrosshair();
     drawDebugInfo();
     drawHealth();  // Draw health HUD
     drawAmmo();    // Draw ammo HUD
+    drawFPS(fps);  // Draw FPS counter
     SDL_RenderPresent(sdlRenderer);
+}
+
+// New function to handle keyboard input
+void handleInput(SDL_Event* e) {
+    if (e->type == SDL_KEYDOWN) {
+        switch (e->key.keysym.sym) {
+            case SDLK_w:
+                playerPos[2] -= 1;
+                break;
+            case SDLK_s:
+                playerPos[2] += 1;
+                break;
+            case SDLK_a:
+                playerPos[0] -= 1;
+                break;
+            case SDLK_d:
+                playerPos[0] += 1;
+                break;
+            case SDLK_SPACE:
+                playerPos[1] += 1;
+                break;
+            case SDLK_LSHIFT:
+                playerPos[1] -= 1;
+                break;
+        }
+    }
 }
 
 int main(int argc, char* argv[]) {
@@ -189,21 +223,34 @@ int main(int argc, char* argv[]) {
 
     bool quit = false;
     SDL_Event e;
+    Uint32 startTime = SDL_GetTicks();
+    int frameCount = 0;
+    int fps = 0;
+
     while (!quit) {
         while (SDL_PollEvent(&e) != 0) {
             if (e.type == SDL_QUIT) {
                 quit = true;
             }
+            handleInput(&e);
         }
 
         SDL_SetRenderDrawColor(sdlRenderer, 0, 0, 0, 255);
         SDL_RenderClear(sdlRenderer);
 
         // Update game logic...
+        simulatePhysics(0.016f);  // Simulate physics with a fixed time step
 
-        renderUI();
+        renderUI(fps);
 
         SDL_RenderPresent(sdlRenderer);
+
+        frameCount++;
+        if (SDL_GetTicks() - startTime >= 1000) {
+            fps = frameCount;
+            frameCount = 0;
+            startTime = SDL_GetTicks();
+        }
     }
 
     SDL_DestroyTexture(fontTexture);
